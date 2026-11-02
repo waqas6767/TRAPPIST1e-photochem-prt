@@ -1,0 +1,9 @@
+# Analysis, paper scripts and emulator (Python 3.10-3.13)
+numpy
+pandas
+scipy
+matplotlib
+scikit-learn==1.6.1    # the emulator pickles were saved with this version
+threadpoolctl
+# Physical pipeline only (install with conda, see README):
+#   photochem (conda-forge), petitRADTRANS 3.x
