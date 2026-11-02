@@ -1,7 +1,8 @@
 # Emulator files
 
-The trained random-forest emulators are too large for GitHub. Download them from the
-Zenodo dataset record (DOI in the main README) and place them here:
+The trained random-forest emulators are too large for GitHub. They will be archived on
+Zenodo when the paper is submitted (the DOI will then be listed in the main README).
+Place the downloaded files here:
 
 | File | Used by |
 |---|---|
