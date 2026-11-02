@@ -154,7 +154,7 @@ print(f"Verdict                     : {verdict}")
 
 print()
 print("-" * 70)
-print("PASTE INTO SECTION 3.2 (or send these lines to Claude)")
+print("PASTE INTO SECTION 3.2")
 print("-" * 70)
 print(f"A constant-depth model gives $\\chi^2_{{\\rm flat}}={chi2_flat:.2f}$ "
       f"($\\chi^2_\\nu={chi2_flat/dof_flat:.3f}$, $P={p_flat:.2f}$), i.e., "

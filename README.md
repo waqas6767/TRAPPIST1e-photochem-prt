@@ -142,8 +142,3 @@ Please cite the paper above and this archive (see `CITATION.cff`; Zenodo DOI to 
 
 Code: GNU General Public License v3.0 (see `LICENSE`), the same licence as Photochem.
 Data tables and figures: Creative Commons Attribution 4.0 (CC BY 4.0).
-
-## Acknowledgement of AI assistance
-
-Parts of the analysis and plotting scripts were written with the help of an AI assistant (Claude, Anthropic)
-and were checked by the authors.
