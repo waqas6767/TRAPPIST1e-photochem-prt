@@ -59,7 +59,7 @@ for x, s in [(1.15, "CH$_4$"), (1.4, "H$_2$O"), (1.7, "CH$_4$"), (2.3, "CH$_4$")
 
 ax.set_ylim(-400, 400)
 ax.set_ylabel("Relative transit depth (ppm)", fontsize=13)
-ax.set_title("TRAPPIST-1e — Observed Spectrum vs. Best-Fit Models", fontsize=15)
+ax.set_title("TRAPPIST-1e — Observed Spectrum vs. Best-Fit Cloud-Free Models", fontsize=15)
 ax.grid(True, which="both", ls=":", alpha=0.6)
 ax.legend(loc="lower right", fontsize=8, ncol=2)
 
