@@ -1,25 +1,35 @@
-# ============================================================
-# REFIT ALL MODELS TO THE UNCORRECTED, QUIET VISITS 1 + 2
-#
-# Why: the spectrum used so far
-#   (tspectra_decontaminated_corrected_flat_JWST-CLR-R10000.txt)
-# was decontaminated with a stellar-contamination model fitted while
-# ASSUMING A FLAT PLANET (bf_model = 'flat' in Espinoza et al.'s
-# plot_combined_corrected_folder.py). That correction can absorb real
-# planetary features, so a flat line fitting best is partly built in.
-#
-# Visits 1 and 2 are the two quiet visits (Glidden et al. 2025 analysed
-# them WITHOUT correction). Refitting to them is an independent test.
-#
-# This cell needs NO Photochem / petitRADTRANS run: it re-uses the binned
-# model spectrum your pipeline already saved for every model
-# (MC_2000_model_results_flatspec/model_XXXX_jwst_fit.csv, column
-# model_depth_ppm). The visit files use the same 67 bins (bin widths
-# agree to 0.3% median), so the saved models can be used directly.
-#
-# Fit: each visit gets its OWN free offset (2 offsets), chi2 summed over
-# both visits: 134 points, dof = 132. Flat line: 2 offsets only.
-# ============================================================
+"""
+Refit of all atmosphere models to the uncorrected JWST visits 1 and 2.
+
+The main comparison spectrum (Espinoza et al. 2025, Figure 3) was corrected
+for stellar contamination with a model fitted while assuming a featureless
+(flat) planet, so it could be biased toward a flat spectrum. Visits 1 and 2
+are the two visits least affected by stellar contamination (Glidden et al.
+2025). This script refits every converged model, and the flat line, to these
+two visits without any contamination correction, as an independent check.
+
+Method
+    - The binned model spectra saved by the pipeline
+      (model_XXXX_jwst_fit.csv, column model_depth_ppm) are reused; no
+      Photochem or petitRADTRANS run is needed. The visit files use the same
+      67 wavelength bins.
+    - Each visit has its own free vertical offset; chi2 is summed over both
+      visits (134 points, 132 degrees of freedom).
+    - Reported: flat line vs. best model (delta-chi2, delta-BIC, prior-averaged
+      likelihood ratio), likelihood-weighted posteriors, and the rank agreement
+      with the fit to the combined spectrum.
+
+Inputs
+    MC_2000_model_results_flatspec/MC_2000_master_results_flatspec.csv
+    MC_2000_model_results_flatspec/model_XXXX_jwst_fit.csv
+    VISIT_DIR/visit1.txt, visit2.txt   (espinoza+2025/figure3/data/jwst/ in the
+                                        Espinoza et al. release,
+                                        doi:10.5281/zenodo.16125662)
+
+Outputs
+    MC_2000_model_results_flatspec/refit_visits12.csv
+    MC_2000_model_results_flatspec/refit_visits12_summary.csv
+"""
 
 from pathlib import Path
 import numpy as np
@@ -28,7 +38,7 @@ from scipy.stats import chi2 as chi2_dist, spearmanr
 
 RESULTS_DIR = Path("MC_2000_model_results_flatspec")
 MASTER_CSV = RESULTS_DIR / "MC_2000_master_results_flatspec.csv"
-VISIT_DIR = Path("/home/waqas/Downloads/TRAPPIST-1e-GTO-2025-main/espinoza+2025/figure3/data/jwst")
+VISIT_DIR = Path("TRAPPIST-1e-GTO-2025-main/espinoza+2025/figure3/data/jwst")   # set to your copy
 VISITS = [1, 2]
 N_ATM_PARAMS = 3
 EPS = 1e-30

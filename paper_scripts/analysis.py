@@ -1,4 +1,15 @@
-"""All numbers for the TRAPPIST-1e paper. Writes results.json + derived tables."""
+"""
+Statistical analysis of the Monte Carlo ensemble: computes every number
+quoted in the paper.
+
+Covers goodness of fit, the featureless-spectrum comparison, likelihood-
+weighted posteriors (with effective sample size), partial correlations,
+detectability (transits needed for a 5-sigma feature), and the validation
+of the random-forest emulator on models not used for training.
+
+Inputs : data/MC_2000_master_results_flatspec_21.csv, models/*.pkl
+Outputs: derived/results.json and the derived tables used by figures.py
+"""
 import json, pickle, numpy as np, pandas as pd
 from scipy.stats import spearmanr, chi2 as CHI2
 from sklearn.base import clone

@@ -1,5 +1,14 @@
-"""Observed TRAPPIST-1e spectrum vs. the ten best-fitting coupled models (style matched to fig_tp.py).
-Each model file is checked against the master CSV (chi2 and offset) before plotting."""
+"""
+Observed TRAPPIST-1e spectrum compared with the ten best-fitting models, the
+flat line and the worst-fitting converged model, with residuals from the
+best fit.
+
+Each model file is checked against the master table (chi2 and offset) before
+plotting.
+
+Inputs : data/MC_2000_master_results_flatspec_21.csv, data/model_fits/
+Output : figures/fig_spectra_top10.pdf/.png
+"""
 import glob, re, numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

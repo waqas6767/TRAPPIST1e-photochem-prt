@@ -1,3 +1,10 @@
+"""
+Main figures of the paper: delta-chi2 against each parameter, the
+CO2-CH4 plane, marginal posteriors, emulator validation and detectability.
+
+Inputs : derived/ (written by analysis.py)
+Outputs: figures/*.pdf
+"""
 import json, numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

@@ -1,78 +1,46 @@
 # ============================================================
-# SELF-CONTAINED SINGLE-CELL NOTEBOOK
+# TRAPPIST-1e Monte Carlo pipeline:
+#   climate -> photochemistry -> transmission spectrum -> JWST fit
 #
-# TRAPPIST-1e ATMOS -> photochemistry -> petitRADTRANS -> JWST
+# For each set of surface partial pressures (N2, CO2, CH4) this script
+#   1. solves for radiative-convective equilibrium with the Photochem
+#      climate model (AdiabatClimate),
+#   2. runs the Photochem photochemical model (EvoAtmosphere) to steady
+#      state on that temperature profile,
+#   3. computes the transmission spectrum with petitRADTRANS
+#      (correlated-k opacities),
+#   4. convolves it to the NIRSpec/PRISM resolution (Gaussian
+#      line-spread function, R ~ 100) and bins it onto the observed
+#      JWST wavelength bins,
+#   5. fits it to the observed spectrum with one free vertical offset
+#      and records chi2, reduced chi2, BIC and a detectability estimate
+#      (feature signal-to-noise and transits needed for 5 sigma).
 #
-# PUBLICATION-GRADE CHI-SQUARE / DELTA-CHI-SQUARE / BIC / SNR ANALYSIS
+# After all models have run, delta-chi2, delta-BIC and relative
+# likelihoods are computed with respect to the best model.
 #
-# This version fixes 6 discrepancies between the original code and
-# Sections 3.2.2 / 3.5 / Eq. 3.4-3.5 / Objective 4 of the thesis
-# proposal "Investigation of TRAPPIST-1e Atmosphere Using 1-D
-# Photochem and petitRADTRANS Codes" (M. Waqas, ITB, 2026):
+# Inputs
+#   MC_2000_atmosphere_sweep.csv   one row per model: P_N2, P_CO2,
+#                                  P_CH4 (bar) and T_surf (K)
+#   JWST_FILE                      observed spectrum with columns
+#                                  wavelength (um), depth (ppm),
+#                                  error (ppm)
+#   input/, zahnle_HNOC.yaml, TRAPPIST1e_stellar_flux.txt
+#                                  Photochem settings and stellar
+#                                  spectrum (see setup_workshop_inputs.sh)
 #
-#   FIX 1:
-#   FIX 2: added O2 line opacity, H2 Rayleigh scattering, and
-#          N2-N2 / N2-H2 collision-induced-absorption (CIA)
-#   FIX 3: reference pressure -> 0.1 bar (was 1.0 bar)
-#   FIX 4: stellar radius -> 0.117 R_sun, Agol et al. 2021 (was 0.1192)
-#   FIX 5: Gaussian line-spread-function convolution to R~100
-#          (NIRSpec PRISM) applied to the model BEFORE JWST binning
-#   FIX 6: Bayesian Information Criterion (BIC) and per-bin
-#          signal-to-noise / detectability (N_transits needed)
-#          added alongside chi2 / reduced-chi2 / delta-chi2
+# Outputs (in RESULTS_DIR)
+#   MC_2000_master_results_flatspec.csv   one row per model
+#   model_XXXX.csv                        one-row result per model
+#   model_XXXX_jwst_fit.csv               per-bin data, model, residual
+#   atmosphere_init_XXXX.txt              climate profile given to
+#                                         the photochemical model
+#   successful_jwst_fits_flatspec.csv, jwst_delta_chi2_ranked_flatspec.csv,
+#   best_fit_model_flatspec.csv           summary tables
 #
-#   FIX 7 (this version): switched the comparison spectrum from the
-#          5-column Canas001 (Espinoza et al. 2025) file to the
-#          3-column (wavelength_um, depth_ppm, error_ppm)
-#          "tspectra_decontaminated_corrected_flat_JWST-CLR-R10000.txt"
-#          spectrum -- the GP stellar-contamination-corrected,
-#          all-four-visits-combined transmission spectrum. Bin edges
-#          are not given in this file and are reconstructed from the
-#          midpoints between adjacent wavelength centers. All outputs
-#          are written to a NEW results directory / master CSV so
-#          they never overwrite or mix with the original Canas-based
-#          run.
-#
-# Workflow:
-#
-#   Monte Carlo atmospheric parameters
-#              |
-#              v
-#        ATMOS climate
-#              |
-#              v
-#    Photochemical steady state
-#              |
-#              v
-#       petitRADTRANS (line-by-line)
-#              |
-#              v
-#     Gaussian LSF convolution (R~100)      <- FIX 5
-#              |
-#              v
-#       JWST binning
-#              |
-#              v
-#    Weighted least-squares (offset fit)
-#              |
-#              v
-#         chi2 / reduced chi2 / BIC          <- FIX 6
-#              |
-#              v
-#       ALL MODELS FINISHED
-#              |
-#              v
-#     chi2_min / BIC_min
-#              |
-#              v
-#     delta_chi2 / delta_BIC
-#              |
-#              v
-#     relative likelihood
-#              |
-#              v
-#     per-bin SNR / N_transits needed        <- FIX 6
-#
+# The script is written as a single Jupyter notebook cell; set
+# START_MODEL / END_MODEL to run a subset. Models already present in
+# the master CSV are skipped, so an interrupted run can be resumed.
 # ============================================================
 
 
@@ -125,23 +93,17 @@ input_files.create_TRAPPIST1e_stellar_flux()
 
 INPUT_CSV = "MC_2000_atmosphere_sweep.csv"
 
-# FIX 7: separate results directory / master CSV for the flat-spectrum
-# comparison run, so this never overwrites the original Canas-based
-# results.
+# Output folder and master results table.
 
 RESULTS_DIR = Path("MC_2000_model_results_flatspec")
 
 MASTER_CSV = RESULTS_DIR / "MC_2000_master_results_flatspec.csv"
 
-# FIX 7: switched from the 5-column Canas001 (Espinoza et al. 2025)
-# file to the 3-column decontaminated/corrected/flat spectrum.
+# Observed spectrum: the stellar-contamination-corrected, four-visit
+# combined NIRSpec/PRISM spectrum of Espinoza et al. (2025), Figure 3
+# (doi:10.5281/zenodo.16125662). Set this path to your copy.
 
-JWST_FILE = (
-    "/home/waqas/Downloads/"
-    "TRAPPIST-1e-GTO-2025-main/"
-    "espinoza+2025/figure3/"
-    "tspectra_decontaminated_corrected_flat_JWST-CLR-R10000.txt"
-)
+JWST_FILE = "tspectra_decontaminated_corrected_flat_JWST-CLR-R10000.txt"
 
 
 # ------------------------------------------------------------
@@ -158,9 +120,9 @@ JWST_FILE = (
 # START_MODEL = 0
 # END_MODEL = None
 
-START_MODEL = 1995
+START_MODEL = 0
 
-END_MODEL = 2000
+END_MODEL = None
 
 SKIP_ALREADY_DONE = True
 
@@ -213,19 +175,16 @@ REQUIRE_FULL_BIN_COVERAGE = True
 
 
 # ------------------------------------------------------------
-# FIX 5: Instrument resolving power for LSF convolution
+# Instrument resolving power for the line-spread-function convolution
 # ------------------------------------------------------------
 #
-# Section 3.5 of the proposal: "we will convolve the synthetic
-# transmission spectra with a Gaussian line-spread function to
-# match the relevant JWST mode ... NIRSpec PRISM resolution
-# (R ~ 100 over 0.6-5.2 um)".
+# Model spectra are convolved with a Gaussian line-spread function of
+# constant resolving power R = 100 (NIRSpec/PRISM, 0.6-5.2 um) before
+# they are binned onto the observed wavelength bins.
 #
-# NOTE: the "R10000" in the new JWST_FILE's filename refers to the
-# resolution of that *reduced data product's wavelength grid*, not
-# to the instrument LSF. It does not override JWST_RESOLVING_POWER,
-# which must stay at the NIRSpec PRISM LSF resolution (R~100) used
-# to convolve the pRT model before binning, per Section 3.5.
+# "R10000" in the data file name is the label of the retrieval run in
+# Espinoza et al. (2025) used for the stellar-contamination correction;
+# it is unrelated to the instrument resolution used here.
 #
 # JWST_LSF_OVERSAMPLE controls how finely the convolved spectrum
 # is re-gridded relative to the LSF width, purely a numerical
@@ -239,22 +198,16 @@ JWST_LSF_OVERSAMPLE = 10
 
 
 # ------------------------------------------------------------
-# FIX 6: Detectability / SNR settings
+# Detectability settings
 # ------------------------------------------------------------
-#
-# Eq. 3.5 of the proposal:
 #
 #   SNR(lambda) = delta_depth(lambda) / (sigma_ph(lambda) / sqrt(N_tr))
 #
-# JWST_FILE is the GP stellar-contamination-corrected transmission
-# spectrum combining all four TRAPPIST-1e visits (decontaminated,
-# corrected, flattened; cf. the Espinoza et al. 2025 reduction, and
-# the right-hand "all four visits" panels of the rejection-
-# significance figure). We back out the single-transit photon noise
-# from those combined error bars via
-# sigma_ph = sigma_data * sqrt(N_TRANSITS_OBSERVED), then compute,
-# for every bin, how many transits would be needed to reach
-# SNR_TARGET on that bin's model-predicted feature amplitude.
+# The observed error bars combine N_TRANSITS_OBSERVED transits, so the
+# single-transit photon noise is sigma_ph = sigma_data *
+# sqrt(N_TRANSITS_OBSERVED). For every bin the script computes how many
+# transits are needed to reach SNR_TARGET on the model's feature
+# amplitude in that bin.
 # ------------------------------------------------------------
 
 N_TRANSITS_OBSERVED = 4
@@ -308,7 +261,7 @@ RESULT_COLUMNS = [
     "relative_likelihood",
     "rms_residual_ppm",
 
-    # FIX 6: information-criterion and detectability summary
+    # Information criterion and detectability summary
     "bic",
     "delta_bic",
     "max_feature_snr",
@@ -334,19 +287,13 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 def load_jwst_data(jwst_file):
     """
-    Load the GP-corrected, all-four-visits-combined TRAPPIST-1e
-    transmission spectrum (decontaminated, corrected, flat;
-    R~10000 wavelength grid, prior to instrument-LSF convolution
-    of the *model*).
+    Load the observed transmission spectrum.
 
     File columns: wavelength_um, depth_ppm, error_ppm
 
-    FIX 7: this file gives bin *centers* only, not lower/upper bin
-    widths (unlike the original 5-column Canas001 file), so the
-    edges used for binning the pRT model (bin_model_to_jwst) are
-    reconstructed from the midpoints between adjacent wavelength
-    centers. The first/last bin edges are mirrored from their
-    nearest-neighbor spacing.
+    The file gives bin centers only, so bin edges are placed at the
+    midpoints between adjacent centers; the outer edges of the first
+    and last bins mirror the neighboring spacing.
     """
 
     data = np.genfromtxt(jwst_file, comments="#")
@@ -462,9 +409,7 @@ GRAVITY_CGS = GRAVITY_M_S2 * 100.0
 # Star
 # ------------------------------------------------------------
 #
-# FIX 4: Section 3.2.2 of the proposal cites R_star = 0.117 R_sun
-# (Agol et al. 2021). The original code used 0.1192, which does not
-# match the cited source.
+# Stellar radius R_star = 0.117 R_sun (Agol et al. 2021).
 
 R_STAR_CGS = 0.117 * R_SUN_CGS
 
@@ -472,9 +417,8 @@ R_STAR_CGS = 0.117 * R_SUN_CGS
 # Transmission spectrum reference pressure
 # ------------------------------------------------------------
 #
-# FIX 3: Section 3.2.2 of the proposal: "We used the reference
-# radius at P_ref = 0.1 bar". The original code used 1.0 bar, which
-# shifts the absolute transit depth (and hence the fitted offset).
+# The planet radius is assigned to the 0.1 bar level. Because a free
+# vertical offset is fitted, this choice does not affect chi2.
 
 REFERENCE_PRESSURE_BAR = 0.1
 
@@ -518,7 +462,7 @@ def empty_result(model_id, P_N2, P_CO2, P_CH4, T_surf_input):
         "relative_likelihood": np.nan,
         "rms_residual_ppm": np.nan,
 
-        # FIX 6
+        # Information criterion and detectability
         "bic": np.nan,
         "delta_bic": np.nan,
         "max_feature_snr": np.nan,
@@ -557,7 +501,7 @@ def save_result(result):
 
 
 # ============================================================
-# 11. FIX 5: CONVOLVE MODEL SPECTRUM TO INSTRUMENT RESOLUTION
+# 11. CONVOLVE MODEL SPECTRUM TO INSTRUMENT RESOLUTION
 # ============================================================
 
 def convolve_to_resolution(
@@ -568,9 +512,8 @@ def convolve_to_resolution(
 ):
     """
     Convolve a high-resolution model transmission spectrum with a
-    Gaussian line-spread function (LSF) of constant resolving power R,
-    as required by Section 3.5 of the proposal before binning onto the
-    NIRSpec PRISM (R ~ 100) wavelength grid.
+    Gaussian line-spread function (LSF) of constant resolving power R
+    (NIRSpec/PRISM, R ~ 100) before binning onto the observed bins.
 
     Because R = lambda / delta_lambda is constant with wavelength, the
     LSF has a FIXED width when expressed in ln(wavelength) space. The
@@ -738,7 +681,7 @@ def bin_model_to_jwst(
 
 
 # ============================================================
-# 13. CALCULATE JWST CHI-SQUARE (+ FIX 6: BIC)
+# 13. CALCULATE JWST CHI-SQUARE AND BIC
 # ============================================================
 
 def calculate_jwst_chi2(fit_data):
@@ -755,15 +698,11 @@ def calculate_jwst_chi2(fit_data):
     If FIT_VERTICAL_OFFSET=True, one nuisance parameter (the vertical
     offset) is fitted, so dof = N_data - 1.
 
-    FIX 6: BIC = chi2 + k * ln(N_data), where k = N_FITTED_PARAMETERS.
-    This follows the standard Gaussian-likelihood BIC approximation
-    (Eq. 3.4 discussion in the proposal, Objective 4). Because k is
-    currently the same (=1, the offset) for every model in the grid,
-    BIC and chi2 will rank models identically for this stage; BIC only
-    becomes discriminating once models with different numbers of free
-    parameters are compared (e.g. against a flat-line null model with
-    k=1 offset-only, or a future model with additional free parameters
-    such as a cloud-deck pressure).
+    BIC = chi2 + k * ln(N_data), with k = N_FITTED_PARAMETERS
+    (Gaussian-likelihood approximation). Because k is the same for
+    every model in the grid, BIC and chi2 rank the models identically;
+    BIC becomes useful when comparing models with different numbers
+    of free parameters, e.g. against a featureless (flat-line) model.
     """
 
     obs = np.asarray(fit_data["obs"], dtype=float)
@@ -811,7 +750,7 @@ def calculate_jwst_chi2(fit_data):
 
     rms_residual_ppm = np.sqrt(np.mean(residuals**2))
 
-    # FIX 6: Bayesian Information Criterion
+    # Bayesian Information Criterion
     bic = chi2 + n_fitted_parameters * np.log(n_data)
 
     return {
@@ -830,7 +769,7 @@ def calculate_jwst_chi2(fit_data):
 
 
 # ============================================================
-# 14. FIX 6: DETECTABILITY / PER-BIN SNR
+# 14. DETECTABILITY / PER-BIN SNR
 # ============================================================
 
 def calculate_detectability(
@@ -840,8 +779,7 @@ def calculate_detectability(
     snr_target=SNR_TARGET,
 ):
     """
-    Per-bin signal-to-noise and required-transit-count calculation,
-    following Eq. 3.5 of the proposal:
+    Per-bin signal-to-noise and required-transit-count calculation:
 
         SNR(lambda) = delta_depth(lambda) / (sigma_ph(lambda) / sqrt(N_tr))
 
@@ -932,7 +870,7 @@ def calculate_detectability(
 def run_one_model(model_id, P_N2, P_CO2, P_CH4, T_surf_input):
     """
     Run one complete atmospheric model:
-        climate -> photochemistry -> petitRADTRANS (lbl) ->
+        climate -> photochemistry -> petitRADTRANS (correlated-k) ->
         LSF convolution -> JWST binning -> chi2/BIC/SNR
     """
 
@@ -1050,19 +988,11 @@ def run_one_model(model_id, P_N2, P_CO2, P_CH4, T_surf_input):
     # 6. petitRADTRANS
     # ========================================================
     #
-    # FIX 2: added O2 line opacity, H2 Rayleigh scattering, and
-    # N2-N2 / N2-H2 collision-induced absorption (CIA), matching
-    # Section 3.2.2:
-    #   "Opacity sources include N2-N2 and N2-H2 collision-induced
-    #   absorption (CIA), molecular line opacities for H2O, CO2, CH4,
-    #   CO, and O2. Rayleigh scattering from N2 and H2 is also
-    #   considered."
-    #
-    # NOTE: verify the exact keyword name for continuum opacities
-    # against the installed petitRADTRANS version's API docs
-    # (it has been named `continuum_opacities` in older pRT2 releases
-    # and `gas_continuum_contributors` in pRT3-style releases; the
-    # `radtrans` import path used here matches the pRT3 convention).
+    # Opacity sources: correlated-k line opacities of H2O, CO2, CH4,
+    # CO and O2; Rayleigh scattering by N2 and H2; N2-N2 and N2-H2
+    # collision-induced absorption. Keyword names follow
+    # petitRADTRANS 3 (older versions call the continuum keyword
+    # `continuum_opacities`).
 
     rt = Radtrans(
         pressures=prt_pressures,
@@ -1098,7 +1028,7 @@ def run_one_model(model_id, P_N2, P_CO2, P_CH4, T_surf_input):
     )
 
     # ========================================================
-    # 7. FIX 5: CONVOLVE TO INSTRUMENT RESOLUTION (R~100) BEFORE BINNING
+    # 7. CONVOLVE TO INSTRUMENT RESOLUTION (R~100) BEFORE BINNING
     # ========================================================
 
     model_wavelength_um_conv, transit_depth_ppm_conv = convolve_to_resolution(
@@ -1137,7 +1067,7 @@ def run_one_model(model_id, P_N2, P_CO2, P_CH4, T_surf_input):
     result["rms_residual_ppm"] = stats["rms_residual_ppm"]
 
     # ========================================================
-    # 10. FIX 6: DETECTABILITY / SNR
+    # 10. DETECTABILITY / SNR
     # ========================================================
 
     detect = calculate_detectability(
@@ -1204,7 +1134,7 @@ def run_mc_sweep(input_csv=INPUT_CSV, start_model=START_MODEL, end_model=END_MOD
 
     print()
     print("=" * 70)
-    print("TRAPPIST-1e ATMOSPHERIC MONTE CARLO SWEEP (flat-spectrum comparison)")
+    print("TRAPPIST-1e ATMOSPHERIC MONTE CARLO SWEEP")
     print("=" * 70)
     print(f"Input models: {len(models)}")
     print(f"Running model_id {start_model} through {end_model - 1}")
@@ -1279,7 +1209,7 @@ def calculate_delta_chi2(results_df):
     """
     Calculate:
         Delta chi-square: dchi2 = chi2 - chi2_min
-        Delta BIC:        dBIC  = BIC  - BIC_min          (FIX 6)
+        Delta BIC:        dBIC  = BIC  - BIC_min
         Relative likelihood: L/L_max = exp(-dchi2 / 2)
 
     chi2_min and BIC_min are determined only from models that:
@@ -1307,7 +1237,7 @@ def calculate_delta_chi2(results_df):
     results.loc[valid, "delta_chi2"] = results.loc[valid, "chi2"] - chi2_min
     results.loc[valid, "relative_likelihood"] = np.exp(-0.5 * results.loc[valid, "delta_chi2"])
 
-    # FIX 6: delta-BIC, analogous to delta-chi2
+    # Delta-BIC, analogous to delta-chi2
     valid_bic = valid & np.isfinite(results["bic"])
     results["delta_bic"] = np.nan
     if np.any(valid_bic):
@@ -1321,7 +1251,7 @@ def calculate_delta_chi2(results_df):
 
     print()
     print("=" * 70)
-    print("GLOBAL JWST FIT SUMMARY (flat-spectrum comparison)")
+    print("GLOBAL JWST FIT SUMMARY")
     print("=" * 70)
     print(f"Best model ID       : {best_model_id}")
     print(f"Minimum chi2        : {chi2_min:.6f}")
@@ -1363,8 +1293,7 @@ def save_final_analysis(results, chi2_min):
     """
     Save: complete master table, successful models,
     delta-chi2-ranked models, and the best-fit model.
-    All written into RESULTS_DIR (the flat-spectrum-comparison
-    results directory), separate from any earlier Canas-based run.
+    All files are written into RESULTS_DIR.
     """
 
     results = results.sort_values("model_id").reset_index(drop=True)
@@ -1393,7 +1322,7 @@ def save_final_analysis(results, chi2_min):
 
     print()
     print("=" * 70)
-    print("FINAL FILES (flat-spectrum comparison)")
+    print("FINAL FILES")
     print("=" * 70)
     print(f"Master results:\n  {MASTER_CSV}")
     print(f"\nSuccessful models:\n  {SUCCESSFUL_CSV}")
@@ -1411,7 +1340,7 @@ def save_final_analysis(results, chi2_min):
 
 print()
 print("=" * 70)
-print("STARTING TRAPPIST-1e MODEL PIPELINE (flat-spectrum comparison)")
+print("STARTING TRAPPIST-1e MODEL PIPELINE")
 print("=" * 70)
 print()
 print("Workflow:")
@@ -1419,7 +1348,7 @@ print("ATMOS climate")
 print("    v")
 print("Photochemical steady state")
 print("    v")
-print("petitRADTRANS (line-by-line)")
+print("petitRADTRANS (correlated-k)")
 print("    v")
 print("Gaussian LSF convolution (R~100)")
 print("    v")
@@ -1442,7 +1371,7 @@ results, chi2_min, best_model_id = calculate_delta_chi2(results)
 
 print()
 print("=" * 70)
-print("TOP 10 JWST-FAVORED MODELS (flat-spectrum comparison)")
+print("TOP 10 JWST-FAVORED MODELS")
 print("=" * 70)
 
 display_columns = [

@@ -1,3 +1,11 @@
+"""
+Spearman rank-correlation matrix of the converged models (appendix figure).
+Correlations not significant after Benjamini-Hochberg correction are marked
+with an asterisk.
+
+Inputs : data/analysis_tables/11-13_*.csv
+Output : figures/fig_correlation_matrix.pdf
+"""
 import numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
