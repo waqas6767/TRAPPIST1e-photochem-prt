@@ -18,6 +18,8 @@ random-forest emulator trained on the ensemble reproduces the pipeline in millis
 - Among coupled atmospheres the data favour muted spectra: low CO₂ (< 0.077 bar at 95% credibility; < 0.12 bar
   from visits 1+2) and high CH₄; N₂ is unconstrained. Through the climate solution this implies a temperate surface,
   T_surf = 288 (+39/−14) K.
+- These exclusions hold for cloud-free atmospheres: in a grey-cloud test, CO₂-rich atmospheres (≳0.09 bar)
+  become compatible with the data only if an opaque cloud top lies at ≈0.03 bar or lower.
 - The emulator reproduces χ² for 1,415 unseen models with R² = 0.984.
 
 ---
@@ -38,11 +40,13 @@ paper_scripts/     Reproduce every number, table and figure in the paper
   analysis.py  -> derived/results.json and derived tables (posteriors, emulator validation, detectability)
   tp_analysis.py -> derived/tp_diagnostics.csv, tp_stats.json (thermal structure of the 10 best models)
   figures.py, fig_tp.py, fig_corr.py, fig_spectra.py -> figures/
+  fig_cloud_test.py, fig_cloud_spectra.py -> figures/ (grey-cloud robustness test)
   retrain.py   -> models/..._v2_all1856.pkl (emulator retrained on all converged models)
 emulator_app/      Interactive Streamlit app ("AI agent") that runs the trained emulators
 data/
   MC_2000_master_results_flatspec_21.csv   One row per Monte Carlo draw (1,995 rows; see columns below)
   model_fits/                              Binned model spectra (model_XXXX_jwst_fit.csv) of the 10 best and the worst model
+  cloud_test/                              Grey-cloud test: results table and binned spectra (20 models x 6 cloud levels)
   atmosphere_profiles/                     Climate profiles (T, P, composition) of the 10 best-fitting models
   analysis_tables/                         Spearman correlation matrix, p-values, FDR-corrected correlations
   refit_visits12.csv                       chi2 of every converged model against uncorrected visits 1+2 (chi2_v12)
@@ -61,6 +65,8 @@ python paper_scripts/tp_analysis.py
 python paper_scripts/fig_tp.py
 python paper_scripts/fig_corr.py
 python paper_scripts/fig_spectra.py
+python paper_scripts/fig_cloud_test.py
+python paper_scripts/fig_cloud_spectra.py
 python paper_scripts/figures.py
 ```
 
