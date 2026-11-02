@@ -9,7 +9,7 @@
 # zipped at the end and downloaded automatically in Colab:
 #
 #   TRAPPIST1e_analysis_results/
-#       figures/   *.png (300 dpi) and *.pdf (vector, for the paper)
+#       figures/   *.png (300 dpi) and *.pdf (vector)
 #       tables/    *.csv
 #       TRAPPIST1e_statistical_analysis.csv   (full per-model table)
 #       TRAPPIST1e_statistical_results.xlsx   (all summary tables)
@@ -121,7 +121,7 @@ def save_table(table, name, index=True):
 # ------------------------------------------------------------
 
 print("=" * 70)
-print("LOAD YOUR MONTE CARLO CSV FILE")
+print("LOAD THE MONTE CARLO RESULTS CSV")
 print("=" * 70)
 
 CSV_PATH = None                    # set a path here to skip the upload dialog

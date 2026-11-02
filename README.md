@@ -26,12 +26,14 @@ random-forest emulator trained on the ensemble reproduces the pipeline in millis
 
 ```
 pipeline/          The physical model: climate -> photochemistry -> petitRADTRANS -> JWST fit
-  trappist1e_mc_pipeline.py     Monte Carlo pipeline exactly as run for the paper (single notebook cell)
+  trappist1e_mc_pipeline.py     Monte Carlo pipeline used for the paper (single notebook cell)
   setup_workshop_inputs.sh      Fetches the Photochem workshop input files and sets 100 layers
-analysis/          Notebook cells run on the pipeline output
+analysis/          Analyses of the pipeline output
   statistical_analysis.py       Full statistical analysis (Colab); saves figures + tables as a zip
   flat_line_baseline.py         Featureless-spectrum baseline (chi2, BIC) on the combined spectrum
   refit_visits12.py             Refit of all models to the uncorrected quiet visits 1 and 2
+  convergence_check.py          Re-runs a subsample and records whether photochemistry reached steady state
+  cloud_test.py                 Grey-cloud robustness test for the best-fitting and excluded models
 paper_scripts/     Reproduce every number, table and figure in the paper
   analysis.py  -> derived/results.json and derived tables (posteriors, emulator validation, detectability)
   tp_analysis.py -> derived/tp_diagnostics.csv, tp_stats.json (thermal structure of the 10 best models)
@@ -124,11 +126,10 @@ Gaussian line-spread function R = 100; one free additive offset per spectrum.
 | `n_transits_for_detection` | Transits for a 5σ single-feature detection |
 | `spectral_amplitude_ppm`, `max_transit_depth_ppm`, `min_transit_depth_ppm` | Native-resolution spectrum range (ppm) |
 
-## Known issues
+## Notes for users
 
-- File paths in `pipeline/trappist1e_mc_pipeline.py` and the `analysis/` cells point to the author's machine; edit them before running.
-- Some comments in the pipeline refer to "line-by-line" opacities; the opacity mode actually used is correlated-k.
-- `photochemistry_converged` is set to `True` whenever `utils.find_steady_state` returns without an error; its return value (whether steady state was reached) is not recorded. A future version will store `converged = utils.find_steady_state(...)`.
+- Set the data paths before running: `JWST_FILE` in `pipeline/trappist1e_mc_pipeline.py` and in `analysis/flat_line_baseline.py`, and `VISIT_DIR` in `analysis/refit_visits12.py`.
+- In the pipeline, `photochemistry_converged` records that the photochemical integration completed without error. Whether each run reached steady state is checked separately by `analysis/convergence_check.py`, which re-runs a subsample of models and records the solver's convergence flag.
 
 ## Data sources
 

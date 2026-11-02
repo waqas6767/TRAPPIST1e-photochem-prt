@@ -179,7 +179,7 @@ r = run(n2, co2, ch4, T_used)
 rel, nn_dist = reliability(n2, co2, ch4)
 
 st.title("TRAPPIST-1e atmosphere detection lab")
-st.caption("Predictions come straight from your trained random forests (500 trees each). "
+st.caption("Predictions come straight from the trained random forests (500 trees each). "
            f"Accuracy figures below are from fresh 10-fold cross-validation on all {CAL['n']} labelled samples, "
            "not the single train/test split stored in the files.")
 tab1, tab2, tab3, tab4 = st.tabs(["Prediction", "Explore", "Batch CSV", "About the models"])

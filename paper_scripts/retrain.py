@@ -1,3 +1,12 @@
+"""
+Retrain the random-forest emulator on all converged models
+(500 trees each): a climate model (P_N2, P_CO2, P_CH4 -> T_surf) and a
+detection model (P_N2, P_CO2, P_CH4, T_surf -> chi2, reduced chi2,
+transits for 5 sigma).
+
+Input : derived/converged_with_weights.csv
+Output: models/TRAPPIST1e_Climate_Detection_AI_Combined_v2_all1856.pkl
+"""
 import pickle, pandas as pd, numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from paths import DATA, DERIVED, MODELS, FIGURES

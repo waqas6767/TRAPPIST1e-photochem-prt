@@ -1,3 +1,11 @@
+"""
+Thermal-structure diagnostics of the ten best-fitting models: cold-trap
+temperature and pressure, upper-atmosphere warm layer, and their
+correlation with the CH4 and CO2 partial pressures.
+
+Inputs : data/MC_2000_master_results_flatspec_21.csv, data/atmosphere_profiles/
+Outputs: derived/tp_diagnostics.csv, derived/tp_stats.json
+"""
 import glob, re, json, numpy as np, pandas as pd
 from scipy.stats import spearmanr, rankdata
 from paths import DATA, DERIVED, MODELS, FIGURES

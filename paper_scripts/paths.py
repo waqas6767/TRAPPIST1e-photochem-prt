@@ -1,4 +1,4 @@
-"""Repository paths shared by the paper scripts (run them from any directory)."""
+"""Folder locations shared by the scripts in paper_scripts/ (they can be run from any directory)."""
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = str(ROOT / "data") + "/"          # master results CSV, atmosphere profiles, analysis tables

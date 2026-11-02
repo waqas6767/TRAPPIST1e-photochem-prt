@@ -1,5 +1,12 @@
-"""T-P profiles of the ten best-fitting models (style matched to the author's figure).
-Every file is checked against the results CSV before plotting."""
+"""
+Temperature-pressure profiles of the ten best-fitting models.
+
+Each profile file is checked against the master table (partial pressures
+within 5%) before plotting.
+
+Inputs : data/MC_2000_master_results_flatspec_21.csv, data/atmosphere_profiles/
+Output : figures/fig_tp_profiles.pdf/.png
+"""
 import glob, re, numpy as np, pandas as pd, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
