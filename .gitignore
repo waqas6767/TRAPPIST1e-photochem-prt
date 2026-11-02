@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+*.pkl
+MC_2000_model_results_flatspec/
+pipeline/input/
+pipeline/input_files.py
+pipeline/utils.py
+pipeline/*.yaml
+pipeline/TRAPPIST1e_stellar_flux.txt
+*.zip
