@@ -93,15 +93,17 @@ fig.subplots_adjust(wspace=0.38)
 fig.savefig(F + "fig_emulator_validation.pdf"); plt.close(fig)
 
 # ---- Fig 5: detectability map
-fig, ax = plt.subplots(1, 2, figsize=(7.1, 3.0))
+fig, ax = plt.subplots(1, 2, figsize=(7.1, 3.0), sharey=True)
 NSEQ = LinearSegmentedColormap.from_list("n", ["#0d3a73", "#2a78d6", "#9cc3f0", "#f4f8fd"])
 for k, (key, n2) in enumerate([("N1", 1), ("N10", 10)]):
     N3 = M[key] * 9 / 25
     im = ax[k].pcolormesh(M["gc"], M["gm"], M[key], cmap=NSEQ, vmin=25, vmax=100, shading="auto", rasterized=True)
     c1 = ax[k].contour(M["gc"], M["gm"], N3, levels=[19], colors=[ORANGE], linewidths=1.1)
     c2 = ax[k].contour(M["gc"], M["gm"], M["chi" + key[1:]] - chimin, levels=[2.30], colors=[INK], linewidths=0.8, linestyles="--")
-    ax[k].set_xlabel(lab["P_CO2"]); ax[k].set_ylabel(lab["P_CH4"])
+    ax[k].set_xlabel(lab["P_CO2"])
     ax[k].set_title(rf"({'ab'[k]}) $p_{{\rm N_2}}={n2}$ bar", loc="left")
+ax[0].set_ylabel(lab["P_CH4"])  # shared y-axis: label only on the left panel
+fig.subplots_adjust(wspace=0.08)
 cb = fig.colorbar(im, ax=ax, pad=0.02); cb.set_label(r"$N_{5\sigma}$: transits for a 5$\sigma$ feature")
 from matplotlib.lines import Line2D
 ax[0].legend([Line2D([], [], color=ORANGE, lw=1.1), Line2D([], [], color=INK, lw=0.8, ls="--")],
