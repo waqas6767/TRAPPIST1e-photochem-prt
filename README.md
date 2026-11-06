@@ -3,7 +3,7 @@
 Code, model results and analysis scripts for
 
 > **M. Waqas & T. Hidayat (2026),** *AI-driven Investigation of the TRAPPIST-1e Atmosphere Using Coupled
-> 1-D Photochem and petitRADTRANS Codes*, in preparation for *The Astronomical Journal*.
+> 1-D Photochem and petitRADTRANS Codes*, in preparation for *Icarus*.
 
 We compare the JWST NIRSpec/PRISM transmission spectrum of TRAPPIST-1e (Espinoza et al. 2025) with
 **1,861 self-consistent N₂–CO₂–CH₄ atmospheres**. Each model has a radiative–convective climate and a
