@@ -3,7 +3,7 @@
 Code, model results and analysis scripts for
 
 > **M. Waqas & T. Hidayat (2026),** *AI-driven Investigation of the TRAPPIST-1e Atmosphere Using Coupled
-> 1-D Photochem and petitRADTRANS Codes*, in preparation for *Icarus*.
+> 1-D Photochem and petitRADTRANS Codes*, submitted to *Icarus*.
 
 We compare the JWST NIRSpec/PRISM transmission spectrum of TRAPPIST-1e (Espinoza et al. 2025) with
 **1,861 self-consistent N₂–CO₂–CH₄ atmospheres**. Each model has a radiative–convective climate and a
@@ -41,7 +41,7 @@ paper_scripts/     Reproduce every number, table and figure in the paper
   tp_analysis.py -> derived/tp_diagnostics.csv, tp_stats.json (thermal structure of the 10 best models)
   figures.py, fig_tp.py, fig_corr.py, fig_spectra.py -> figures/
   fig_cloud_test.py, fig_cloud_spectra.py -> figures/ (grey-cloud robustness test)
-  retrain.py   -> models/..._v2_all1856.pkl (emulator retrained on all converged models)
+  retrain.py   -> models/..._v2_all1861.pkl (emulator retrained on all converged models)
 emulator_app/      Interactive Streamlit app ("AI agent") that runs the trained emulators
 data/
   MC_2000_master_results_flatspec_21.csv   One row per Monte Carlo draw (1,995 rows; see columns below)

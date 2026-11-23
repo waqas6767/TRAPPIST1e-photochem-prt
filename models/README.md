@@ -9,7 +9,7 @@ Place the downloaded files here:
 | `TRAPPIST1e_Climate_Detection_AI_Combined.pkl` | `paper_scripts/analysis.py`, `emulator_app/` |
 | `TRAPPIST1e_Detection_AI_COMPLETE.pkl` | `paper_scripts/analysis.py`, `emulator_app/` |
 | `TRAPPIST1e_Detection_Statistics_RF.pkl` | `emulator_app/` |
-| `TRAPPIST1e_Climate_Detection_AI_Combined_v2_all1856.pkl` | made by `paper_scripts/retrain.py` (no download needed) |
+| `TRAPPIST1e_Climate_Detection_AI_Combined_v2_all1861.pkl` | made by `paper_scripts/retrain.py` (no download needed) |
 
 Only load pickle files from a source you trust: unpickling can run code. The scripts in this
 repository use a restricted loader that accepts only scikit-learn, NumPy, pandas and SciPy classes.
